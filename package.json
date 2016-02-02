@@ -1,0 +1,26 @@
+{
+  "name": "musicradar-crawler",
+  "version": "0.0.1",
+  "description": "crawler for musicradar 50000 samples free",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Champii/SampleCrawler.git"
+  },
+  "author": "",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/Champii/SampleCrawler/issues"
+  },
+  "homepage": "https://github.com/Champii/SampleCrawler#readme",
+  "dependencies": {
+    "async": "^1.5.2",
+    "prelude-ls": "^1.1.2",
+    "progress-stream": "^1.2.0",
+    "request": "^2.69.0",
+    "unzip": "^0.1.11"
+  }
+}

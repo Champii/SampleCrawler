@@ -47,10 +47,11 @@ class Crawler
         @write-error "Didnt found files for #id\n"
 
       @files = @files ++ files
+
       done!
 
   get-file: (file) ->
-
+    return if not file?
     file.downloading = true
     str = progress time: 1000
 

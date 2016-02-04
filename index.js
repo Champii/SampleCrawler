@@ -36,7 +36,7 @@
     prototype.getPage = function(id, done){
       var this$ = this;
       return req("http://www.musicradar.com/news/tech" + id, function(err, res, body){
-        var files, names;
+        var files, names, fileExists;
         if (err != null) {
           return done(err);
         }
@@ -63,6 +63,16 @@
         if (files == null) {
           this$.writeError("Didnt found files for " + id + "\n");
         }
+        fileExists = function(file){
+          try {
+            return fs.statSync(file).isDirectory();
+          } catch (e$) {}
+        };
+        each(function(it){
+          if (fileExists(join$.call(slice$.call(it.name, 0, -4), ''))) {
+            return it.finished = true;
+          }
+        }, files);
         this$.files = this$.files.concat(files);
         return done();
       });
@@ -80,7 +90,7 @@
         file.downloaded = Math.floor(prog.transferred / Math.pow(1024, 2));
         return file.speed = Math.floor(prog.speed / 1024);
       });
-      return req(file.url).pipe(str).pipe(fs.createWriteStream(path.resolve(this.path, file.name) + "")).on('finish', function(){
+      return req(file.url).pipe(str).pipe(fs.createWriteStream(path.resolve(this.path, file.name) + "")).on('error', bind$(this, 'writeError')).on('finish', function(){
         file.downloading = false;
         return this$.unzipFile(file);
       });
@@ -101,7 +111,7 @@
       file.unzipping = true;
       return fs.createReadStream(path.resolve(this.path, file.name) + "").pipe(unzip.Extract({
         path: this.path
-      })).on('close', function(){
+      })).on('error', bind$(this, 'writeError')).on('close', function(){
         file.unzipping = false;
         return file.finished = true;
       });

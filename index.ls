@@ -22,7 +22,7 @@ class Crawler
 
       @pages = map (.[til -1]*''), body.match /\/sampleradar-[0-9]{6}.([0-9]+")*/g
 
-      async.each @pages, @~get-page, ~>
+      async.eachSeries @pages, @~get-page, ~>
       setInterval @~download-progress, 1000
 
   get-page: (id, done) ->
@@ -46,6 +46,10 @@ class Crawler
       if not files?
         @write-error "Didnt found files for #id\n"
 
+      file-exists = (file) -> try fs.statSync file .isDirectory!
+
+      each (~> if file-exists (path.resolve @path, 'musicradar-' + it.name[til -4]*'') => then it.finished = true), files
+
       @files = @files ++ files
 
       done!
@@ -62,6 +66,7 @@ class Crawler
     req file.url
       .pipe str
       .pipe fs.createWriteStream "#{path.resolve @path, file.name}"
+      .on \error  @~write-error
       .on \finish ~>
         file.downloading = false
         @unzip-file file
@@ -76,6 +81,7 @@ class Crawler
     file.unzipping = true
     fs.createReadStream "#{path.resolve @path, file.name}"
       .pipe unzip.Extract path: @path
+      .on \error  @~write-error
       .on \close ~>
         file.unzipping = false
         file.finished = true

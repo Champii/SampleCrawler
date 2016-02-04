@@ -4,6 +4,7 @@
   "description": "crawler for musicradar 50000 samples free",
   "main": "index.js",
   "scripts": {
+    "install": "echo \"Building\" && lsc -c index.ls && nexe -i index.js -o musicradar",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

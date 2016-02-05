@@ -1,12 +1,13 @@
 global import require \prelude-ls
-child = require 'child_process'
-async = require 'async'
-fs = require 'fs'
-progress = require 'progress-stream'
-req = require 'request'
-readline = require 'readline'
-unzip = require \unzip
-path = require \path
+require! {
+  async
+  fs
+  \progress-stream
+  request
+  readline
+  \adm-zip
+  path
+}
 
 class Crawler
 
@@ -17,7 +18,7 @@ class Crawler
   start: ->
     fs.unlink \./error.log, ->
 
-    req 'http://www.musicradar.com/news/tech/free-music-samples-download-loops-hits-and-multis-627820', (err, res, body) ~>
+    request 'http://www.musicradar.com/news/tech/free-music-samples-download-loops-hits-and-multis-627820', (err, res, body) ~>
       return console.error err if err?
 
       @pages = map (.[til -1]*''), body.match /\/sampleradar-[0-9]{6}.([0-9]+")*/g
@@ -26,7 +27,7 @@ class Crawler
       setInterval @~download-progress, 1000
 
   get-page: (id, done) ->
-    req "http://www.musicradar.com/news/tech#id", (err, res, body) ~>
+    request "http://www.musicradar.com/news/tech#id", (err, res, body) ~>
       return done err if err?
 
       files = body.match /http:\/\/cdn.mos.musicradar.com\/audio\/samples\/([a-z]|[0-9]|-)+\.zip/g
@@ -57,18 +58,20 @@ class Crawler
   get-file: (file) ->
     return if not file?
     file.downloading = true
-    str = progress time: 1000
+    str = progress-stream time: 1000
 
     str.on \progress (prog) ~>
       file.downloaded = Math.floor prog.transferred / (1024 ^ 2)
       file.speed = Math.floor prog.speed / 1024
 
-    req file.url
+    request file.url
       .pipe str
-      .pipe fs.createWriteStream "#{path.resolve @path, file.name}"
+      .pipe fs.createWriteStream path.resolve @path, file.name
       .on \error  @~write-error
       .on \finish ~>
         file.downloading = false
+        file.speed = 0
+        file.unzipping = true
         @unzip-file file
 
   download-progress: ->
@@ -78,20 +81,32 @@ class Crawler
     @download-aff!
 
   unzip-file: (file) ->
-    file.unzipping = true
-    fs.createReadStream "#{path.resolve @path, file.name}"
-      .pipe unzip.Extract path: @path
-      .on \error  @~write-error
-      .on \close ~>
-        file.unzipping = false
-        file.finished = true
+    zip = new adm-zip path.resolve @path, file.name
+    zip.extractAllTo @path, true
+    file.finished = true
+    file.unzipping = false
+
+
+    # minizip.unzip path.resolve(@path, file.name), @path, (err) ~>
+    #   file.finished = true
+    #   file.unzipping = false
+    #   @write-error err if err?
+
+
+      # file.unz
+    # fs.createReadStream "#{path.resolve @path, file.name}"
+    #   .pipe unzip.Extract path: @path
+    #   .on \error  @~write-error
+    #   .on \close ~>
+        # file.unzipping = false
+        # file.finished = true
 
   download-aff: ->
     readline.clearScreenDown process.stdout
     @files |> filter (-> !it.finished and it.downloading) |> map -> console.log "#{it.downloaded}Mo, #{it.speed}Ko/s -> #{it.name}"
     @files |> filter (-> !it.finished and it.unzipping)   |> map -> console.log "Unzipping...  -> #{it.name}"
     console.log '---'
-    console.log "Extracting to    : #{@path}"
+    console.log "Extracting to    : #{path.resolve @path}"
     console.log "Processing       : #{(@files |> filter (-> !it.finished and (it.downloading or it.unzipping))).length}/#{@maxFiles} files"
     console.log "Finished         : #{(@files |> filter (.finished)).length}/#{@files.length}"
     console.log "Total speed      : #{fold1 (+), map (.speed), @files}Ko/s"
@@ -99,6 +114,6 @@ class Crawler
     readline.moveCursor process.stdout, 0, -(@files |> filter (-> !it.finished and (it.downloading or it.unzipping))).length - 6
 
   write-error: ->
-    fs.appendFile \./error.log it, console.error
+    fs.appendFile \./error.log it + '\n', ->
 
 new Crawler process.argv[2], process.argv[3]

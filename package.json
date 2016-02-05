@@ -18,10 +18,10 @@
   },
   "homepage": "https://github.com/Champii/SampleCrawler#readme",
   "dependencies": {
+    "adm-zip": "^0.4.7",
     "async": "^1.5.2",
     "prelude-ls": "^1.1.2",
     "progress-stream": "^1.2.0",
-    "request": "^2.69.0",
-    "unzip": "^0.1.11"
+    "request": "^2.69.0"
   }
 }

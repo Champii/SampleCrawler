@@ -29,7 +29,7 @@
         this$.pages = map(function(it){
           return join$.call(slice$.call(it, 0, -1), '');
         }, body.match(/\/sampleradar-[0-9]{6}.([0-9]+")*/g));
-        async.each(this$.pages, bind$(this$, 'getPage'), function(){});
+        async.eachSeries(this$.pages, bind$(this$, 'getPage'), function(){});
         return setInterval(bind$(this$, 'downloadProgress'), 1000);
       });
     };
@@ -69,7 +69,7 @@
           } catch (e$) {}
         };
         each(function(it){
-          if (fileExists(join$.call(slice$.call(it.name, 0, -4), ''))) {
+          if (fileExists(path.resolve(this$.path, 'musicradar-' + join$.call(slice$.call(it.name, 0, -4), '')))) {
             return it.finished = true;
           }
         }, files);
